@@ -1,3 +1,4 @@
+#coding=utf-8
 #!/usr/bin/python
 # build_native.py
 # Build native codes
@@ -406,6 +407,56 @@ class AndroidBuilder(object):
         cmd = '"%s" --parallel --info assemble%s' % (gradle_path, mode_str)
         self._run_cmd(cmd, cwd=self.app_android_root)
 
+    def gradle_build_apk_not_studio(self, build_mode):
+        # check the compileSdkVersion & buildToolsVersion
+        check_file = os.path.join(self.app_android_root, 'build.gradle')
+        f = open(check_file)
+        lines = f.readlines()
+        f.close()
+
+        compile_sdk_ver = None
+        build_tools_ver = None
+        compile_sdk_pattern = r'compileSdkVersion[ \t]+([\d]+)'
+        build_tools_pattern = r'buildToolsVersion[ \t]+"(.+)"'
+        for line in lines:
+            line_str = line.strip()
+            match1 = re.match(compile_sdk_pattern, line_str)
+            if match1:
+                compile_sdk_ver = match1.group(1)
+
+            match2 = re.match(build_tools_pattern, line_str)
+            if match2:
+                build_tools_ver = match2.group(1)
+
+        if compile_sdk_ver is not None:
+            # check the compileSdkVersion
+            check_folder_name = 'android-%s' % compile_sdk_ver
+            check_path = os.path.join(self.sdk_root, 'platforms', check_folder_name)
+            if not os.path.isdir(check_path):
+                cocos.Logging.warning(MultiLanguage.get_string('COMPILE_WARNING_COMPILE_SDK_FMT',
+                                                               (compile_sdk_ver, check_path)))
+
+        if build_tools_ver is not None:
+            # check the buildToolsVersion
+            check_path = os.path.join(self.sdk_root, 'build-tools', build_tools_ver)
+            if not os.path.isdir(check_path):
+                cocos.Logging.warning(MultiLanguage.get_string('COMPILE_WARNING_BUILD_TOOLS_FMT',
+                                                               (build_tools_ver, check_path)))
+
+        # invoke gradlew for gradle building
+        if cocos.os_is_win32():
+            gradle_path = os.path.join(self.app_android_root, "..", "..", 'gradlew.bat')
+        else:
+            gradle_path = os.path.join(self.app_android_root, "..", "..", 'gradlew')
+
+        if not os.path.isfile(gradle_path):
+            raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_GRALEW_NOT_EXIST_FMT', gradle_path),
+                                      cocos.CCPluginError.ERROR_PATH_NOT_FOUND)
+
+        mode_str = 'Debug' if build_mode == 'debug' else 'Release'
+        cmd = '"%s" --parallel --info assemble%s' % (gradle_path, mode_str)
+        self._run_cmd(cmd, cwd=self.app_android_root)
+
     class LuaBuildType:
         UNKNOWN = -1
         ONLY_BUILD_64BIT = 1
@@ -537,6 +588,19 @@ class AndroidBuilder(object):
             # build apk
             if self.use_studio:
                 self.gradle_build_apk(build_mode)
+            elif os.path.exists(os.path.join(self.app_android_root, 'build.gradle')): #工程gradle build
+                # build with gradle....
+                print "build with build.gradle...."
+                self.gradle_build_apk_not_studio(build_mode);
+
+                pkg_module_path = "release"
+                if build_mode != "release":
+                    pkg_module_path = "debug"
+
+                gen_apk_folder = os.path.join(self.app_android_root, 'build/outputs/apk', pkg_module_path)
+
+                self.app_android_root.rstrip('/')
+                project_name = os.path.basename(self.app_android_root)
             else:
                 self.ant_build_apk(build_mode, custom_step_args)
 
