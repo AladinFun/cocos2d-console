@@ -418,6 +418,11 @@ class AndroidBuilder(object):
         build_tools_ver = None
         compile_sdk_pattern = r'compileSdkVersion[ \t]+([\d]+)'
         build_tools_pattern = r'buildToolsVersion[ \t]+"(.+)"'
+
+        depend_lib_pattern = r'compile(.+?)project'
+
+
+
         for line in lines:
             line_str = line.strip()
             match1 = re.match(compile_sdk_pattern, line_str)
@@ -427,6 +432,12 @@ class AndroidBuilder(object):
             match2 = re.match(build_tools_pattern, line_str)
             if match2:
                 build_tools_ver = match2.group(1)
+
+            match3 = re.match(depend_lib_pattern, line_str)
+            if match3:
+                part = re.findall(r"\'(.+?)\'", line_str)
+                if part:
+                    self.copy_depend_lisb_armeabiv7(part[0].strip().replace(':', '/'));
 
         if compile_sdk_ver is not None:
             # check the compileSdkVersion
@@ -449,6 +460,8 @@ class AndroidBuilder(object):
         else:
             gradle_path = os.path.join(self.app_android_root, "..", "..", 'gradlew')
 
+        print "=======gradle_path : " + gradle_path 
+
         if not os.path.isfile(gradle_path):
             raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_GRALEW_NOT_EXIST_FMT', gradle_path),
                                       cocos.CCPluginError.ERROR_PATH_NOT_FOUND)
@@ -456,6 +469,26 @@ class AndroidBuilder(object):
         mode_str = 'Debug' if build_mode == 'debug' else 'Release'
         cmd = '"%s" --parallel --info assemble%s' % (gradle_path, mode_str)
         self._run_cmd(cmd, cwd=self.app_android_root)
+
+    def copy_depend_lisb_armeabiv7(self, dependLibPath):
+        dependLibPath = dependLibPath.strip('/')
+        print "dependLibPath : " + dependLibPath
+        armeabiPath = os.path.join(self.app_android_root, "..", "..", dependLibPath, "libs", "armeabi-v7a")
+        # armeabiPath = self.app_android_root + "../.." + dependLibPath + "/libs/armeabi-v7a"
+        print "armeabiPath : " + armeabiPath + "========"
+        if os.path.isdir(armeabiPath):
+            print("&&&&&&&&&&&&&&1")
+            appArmeabiv7Path = os.path.join(self.app_android_root, "libs", "armeabi-v7a")
+            if not os.path.isdir(appArmeabiv7Path):
+                os.makedirs(appArmeabiv7Path)
+
+            allList = os.listdir(armeabiPath)
+            print("&&&&&&&&&&&&&&1")
+            for i in allList:
+                print "all list #### : " + i
+                shutil.copyfile(armeabiPath + "/" + i, appArmeabiv7Path + "/" + i)
+
+
 
     class LuaBuildType:
         UNKNOWN = -1
@@ -599,7 +632,7 @@ class AndroidBuilder(object):
 
                 gen_apk_folder = os.path.join(self.app_android_root, 'build/outputs/apk', pkg_module_path)
 
-                self.app_android_root.rstrip('/')
+                self.app_android_root = self.app_android_root.rstrip('/')
                 project_name = os.path.basename(self.app_android_root)
             else:
                 self.ant_build_apk(build_mode, custom_step_args)
