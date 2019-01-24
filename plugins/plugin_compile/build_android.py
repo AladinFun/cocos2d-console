@@ -437,7 +437,8 @@ class AndroidBuilder(object):
             if match3:
                 part = re.findall(r"\'(.+?)\'", line_str)
                 if part:
-                    self.copy_depend_lisb_armeabiv7(part[0].strip().replace(':', '/'));
+                    self.copy_depend_lisb_armeabiv7(part[0].strip().replace(':', '/'))
+                    self.copy_depend_lisb_armeabi(part[0].strip().replace(':', '/'))
 
         if compile_sdk_ver is not None:
             # check the compileSdkVersion
@@ -488,7 +489,23 @@ class AndroidBuilder(object):
                 print "all list #### : " + i
                 shutil.copyfile(armeabiPath + "/" + i, appArmeabiv7Path + "/" + i)
 
+    def copy_depend_lisb_armeabi(self, dependLibPath):
+        dependLibPath = dependLibPath.strip('/')
+        print "dependLibPath : " + dependLibPath
+        armeabiPath = os.path.join(self.app_android_root, "..", "..", dependLibPath, "libs", "armeabi")
+        # armeabiPath = self.app_android_root + "../.." + dependLibPath + "/libs/armeabi-v7a"
+        print "armeabiPath : " + armeabiPath
+        if os.path.isdir(armeabiPath):
+            print("armeabiPath&&&&&&&&&&&&&&1")
+            appArmeabiPath = os.path.join(self.app_android_root, "libs", "armeabi")
+            if not os.path.isdir(appArmeabiPath):
+                os.makedirs(appArmeabiPath)
 
+            allList = os.listdir(armeabiPath)
+            print("armeabiPath&&&&&&&&&&&&&&1")
+            for i in allList:
+                print "armeabiPath all list #### : " + i
+                shutil.copyfile(armeabiPath + "/" + i, appArmeabiPath + "/" + i)
 
     class LuaBuildType:
         UNKNOWN = -1
