@@ -407,7 +407,7 @@ class AndroidBuilder(object):
         cmd = '"%s" --parallel --info assemble%s' % (gradle_path, mode_str)
         self._run_cmd(cmd, cwd=self.app_android_root)
 
-    def gradle_build_apk_not_studio(self, build_mode):
+    def gradle_build_apk_not_studio(self, build_mode, custom_step_args):
         # check the compileSdkVersion & buildToolsVersion
         check_file = os.path.join(self.app_android_root, 'build.gradle')
         f = open(check_file)
@@ -469,6 +469,9 @@ class AndroidBuilder(object):
 
         mode_str = 'Debug' if build_mode == 'debug' else 'Release'
         cmd = '"%s" --parallel --info assemble%s' % (gradle_path, mode_str)
+        if custom_step_args["gradle-mode"] == "offline":
+           cmd = '"%s" --parallel --offline --info assemble%s' % (gradle_path, mode_str)
+
         self._run_cmd(cmd, cwd=self.app_android_root)
 
     def copy_depend_lisb_armeabiv7(self, dependLibPath):
@@ -641,7 +644,7 @@ class AndroidBuilder(object):
             elif os.path.exists(os.path.join(self.app_android_root, 'build.gradle')): #工程gradle build
                 # build with gradle....
                 print "build with build.gradle...."
-                self.gradle_build_apk_not_studio(build_mode);
+                self.gradle_build_apk_not_studio(build_mode, custom_step_args);
 
                 pkg_module_path = "release"
                 if build_mode != "release":

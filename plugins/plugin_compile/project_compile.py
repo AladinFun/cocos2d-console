@@ -66,6 +66,8 @@ class CCPluginCompile(cocos.CCPlugin):
                           help=MultiLanguage.get_string('COMPILE_ARG_JOBS'))
         parser.add_argument("-o", "--output-dir", dest="output_dir",
                             help=MultiLanguage.get_string('COMPILE_ARG_OUTPUT'))
+        parser.add_argument("--gradle-mode", dest="gradlemode", default='online',
+                          help="gradle build mode default online.")
 
         group = parser.add_argument_group(MultiLanguage.get_string('COMPILE_ARG_GROUP_ANDROID'))
         group.add_argument("--ap", dest="android_platform",
@@ -142,6 +144,8 @@ class CCPluginCompile(cocos.CCPlugin):
                                           MultiLanguage.get_string('COMPILE_ERROR_WRONG_NDK_MODE_FMT',
                                                                    available_ndk_modes))
         self._no_apk = args.no_apk
+
+        self._gradle_mode = args.gradlemode
 
         self.app_abi = None
         if args.app_abi:
@@ -253,7 +257,8 @@ class CCPluginCompile(cocos.CCPlugin):
             "project-path": self._project.get_project_dir(),
             "platform-project-path": self._platforms.project_path(),
             "build-mode": self._mode,
-            "output-dir": self._output_dir
+            "output-dir": self._output_dir,
+            "gradle-mode" : self._gradle_mode
         }
 
         if self._platforms.is_android_active():
